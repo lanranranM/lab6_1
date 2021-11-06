@@ -8,7 +8,6 @@ import androidx.fragment.app.FragmentActivity;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.location.Location;
-import android.media.MediaSession2;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -31,8 +30,8 @@ import com.google.android.gms.tasks.Task;
 public class MainActivity extends FragmentActivity {
     private static final int PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 12;
     private static final int PRIORITY_HIGH_ACCURACY = 13;//
-    private final CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();//
     private final LatLng m = new LatLng(43.0757378, -89.4061951);
+    private final LatLng test = new LatLng(40,-85);
     private LatLngBounds mB = new LatLngBounds(
             new LatLng(40, -90), new LatLng(50, -90));
     private GoogleMap mMap;
@@ -42,16 +41,18 @@ public class MainActivity extends FragmentActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        createLocationRequest();
+        mF = LocationServices.getFusedLocationProviderClient(this);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_map);
+
         mapFragment.getMapAsync(googleMap -> {
             mMap = googleMap;
             googleMap.addMarker(new MarkerOptions().position(m).title("Destination"));
             googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mB.getCenter(), 5));
-            createLocationRequest();
             displayLocation();
         });
 
-        mF = LocationServices.getFusedLocationProviderClient(this);
+
     }
     //
     protected void createLocationRequest() {
@@ -66,22 +67,19 @@ public class MainActivity extends FragmentActivity {
         int permission = ActivityCompat.checkSelfPermission(this.getApplicationContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION);
         if (permission == PackageManager.PERMISSION_DENIED) {
-            createLocationRequest();
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
         }
         //if permission granted, display marker at current
         else {
+            createLocationRequest();
             mF.getLastLocation().addOnCompleteListener(this, task -> {
-                createLocationRequest();
                 Location mL = task.getResult();
-
-//                LatLng now = new LatLng(mL.getLatitude(),mL.getLongitude());
-//                mMap.addMarker(new MarkerOptions().position(now).title("now"));
                 Log.i("HI","12222222222222222");
                 if (task.isSuccessful() && mL!=null){
                     LatLng now = new LatLng(mL.getLatitude(),mL.getLongitude());
                     mMap.addMarker(new MarkerOptions().position(now).title("now"));
+                    Log.i("info",String.valueOf(mL.getLatitude()));
                     Polyline polyline = mMap.addPolyline(new PolylineOptions()
                             .add(new LatLng(mL.getLatitude(),mL.getLongitude()),m));
                     polyline.setTag("Route");
@@ -99,7 +97,6 @@ public class MainActivity extends FragmentActivity {
                                            @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        createLocationRequest();
         if (requestCode == PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 displayLocation();
